@@ -7,6 +7,7 @@ from .models import *
 
 # Create your views here.
 
+@login_required
 def home(request):  
     following_post = Follwer.objects.filter(follower=request.user).values_list('following', flat=True) # get list of users being followed 
     post = Post.objects.filter(author__in=following_post).order_by('-created_at')
