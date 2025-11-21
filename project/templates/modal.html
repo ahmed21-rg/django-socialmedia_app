@@ -1,0 +1,45 @@
+{% load static %}
+
+<div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      
+      <!-- Modal Header -->
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="createPostModalLabel">
+          <i class="fa-solid fa-plus-circle me-2"></i> Create New Post
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <form action="{% url 'upload' %}" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+
+          <!-- Image Upload -->
+          <div class="mb-4 text-center">
+            <img src="{% static 'css/upload.png' %}" alt="Upload" class="img-fluid mb-3" style="width: 80px;">
+            <label for="imageUpload" class="form-label fw-semibold">Upload Photo</label>
+            <input type="file" name="image_upload" id="imageUpload" class="form-control" required>
+          </div>
+
+          <!-- Caption -->
+          <div class="mb-3">
+            <label for="caption" class="form-label fw-semibold">Caption</label>
+            <textarea class="form-control" name="caption" id="caption" rows="3" placeholder="Write something..." required></textarea>
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-upload me-1"></i> Post
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

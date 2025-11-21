@@ -1,0 +1,263 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home | Social Media</title>
+
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/cb792c0850.js" crossorigin="anonymous"></script>
+  <style>
+  .post-card img {
+    width: 100%;
+    max-height: 450px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+
+.profile-pic {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ddd;
+}
+
+
+  .sidebar {
+    background-color: white;
+    height: 100vh;
+    border-right: 1px solid #ddd;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding-top: 20px;
+  }
+
+.profile-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ddd;
+}
+
+
+ .post-card img:not(.profile-avatar) {
+  width: 100%;
+  max-height: 450px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+
+  .post-content {
+    padding: 15px 20px;
+  }
+</style>
+
+</head>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const commentForms = document.querySelectorAll('.comment-form');
+
+  commentForms.forEach(form => {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault(); // Stop normal form submission
+
+      const postId = this.dataset.postId;
+      const content = this.querySelector('input[name="content"]').value;
+      const csrfToken = this.querySelector('[name=csrfmiddlewaretoken]').value;
+
+      // Send AJAX request
+      const response = await fetch(`/post/${postId}/comments/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ content })
+      });
+
+      const data = await response.json();
+
+      // Add new comment dynamically
+      const commentList = document.querySelector(`#comment-list-${postId}`);
+      const newComment = document.createElement('div');
+      newComment.classList.add('border-bottom', 'mb-2', 'pb-1');
+      newComment.innerHTML = `
+        <strong>@${data.user}</strong>
+        <p class="mb-1">${data.content}</p>
+        <small class="text-muted">${data.created_at}</small>
+      `;
+      commentList.prepend(newComment);
+
+      // Clear input field
+      this.querySelector('input[name="content"]').value = '';
+    });
+  });
+});
+
+
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.btn-like').forEach(button => {
+    button.addEventListener('click', async function () {
+      const postId = this.dataset.postId;
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+      const response = await fetch(`/like-post/${postId}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+      });
+
+      const data = await response.json();
+
+      // ✅ Update like count
+      const likeCount = document.getElementById(`like-count-${postId}`);
+      if (data.no_of_likes === 0) {
+        likeCount.textContent = '0 likes';
+      } else if (data.no_of_likes === 1) {
+        likeCount.textContent = 'Liked by 1 person';
+      } else {
+        likeCount.textContent = `Liked by ${data.no_of_likes} people`;
+      }
+
+      // ✅ Toggle button style & text
+      if (data.liked) {
+        this.classList.remove('btn-outline-primary');
+        this.classList.add('btn-danger');
+        this.innerHTML = `<i class="fa-solid fa-thumbs-down me-1"></i> Unlike`;
+      } else {
+        this.classList.remove('btn-danger');
+        this.classList.add('btn-outline-primary');
+        this.innerHTML = `<i class="fa-solid fa-thumbs-up me-1"></i> Like`;
+      }
+    });
+  });
+});
+</script>
+
+
+
+<body>
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <nav class="col-md-2 d-none d-md-block sidebar">
+      <div class="text-center">
+        <img src="{{ pos.user.profile.profile_picture.url }}" alt="Profile Picture" class="profile-pic">
+        <h5 class="mt-2"><a href="/profile/{{ user.username }}">@{{ user.username }}</a></h5>
+      </div>
+
+      <ul class="nav flex-column mt-4">
+        <li class="nav-item"><a class="nav-link" href="/"><i class="fa-solid fa-house me-2"></i>Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/explore"><i class="fa-solid fa-compass me-2"></i>Explore</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="fa-solid fa-magnifying-glass me-2"></i>Search</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#createPostModal"><i class="fa-solid fa-circle-plus me-2"></i>Create Post</a></li>
+        <li class="nav-item"><a class="nav-link" href="/profile/{{ user.username }}"><i class="fa-solid fa-user me-2"></i>Profile</a></li>
+        <li class="nav-item"><a class="nav-link text-danger" href="{% url 'logout' %}"><i class="fa-solid fa-right-from-bracket me-2"></i>Logout</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 offset-md-2 px-md-4">
+      {% include "search.html" %}
+      {% include "modal.html" %}
+
+      <!-- Posts -->
+      <div class="mt-4">
+        {% for pos in post %}
+        <div class="post-card">
+          <div class="text-start p-3">
+            <a href="/profile/{{ pos.author.username }}">
+              <img src="{{ pos.author.profile.profile_picture.url }}"
+                alt="Profile Picture"
+                class="profile-avatar me-2">
+
+              <strong>@{{ pos.author.username }}</strong>
+            </a>
+          </div>
+
+          <img src="{{ pos.image.url }}" alt="Post Image">
+
+          <div class="post-content">
+            <p class="mb-1">{{ pos.caption }}</p>
+            <p class="text-muted small">{{ pos.created_at }}</p>
+
+           <!-- 👍 Like Button & Likes Count -->
+            <div class="d-flex justify-content-between align-items-center mt-2">
+            <a href="javascript:void(0);"
+                class="btn-like btn 
+                {% if pos.existing_like %}btn-danger{% else %}btn-outline-primary{% endif %} btn-sm"
+                data-post-id="{{ pos.id }}">
+                
+                {% if pos.existing_like %}
+                <i class="fa-solid fa-thumbs-down me-1"></i> Unlike
+                {% else %}
+                <i class="fa-solid fa-thumbs-up me-1"></i> Like
+                {% endif %}
+            </a>
+
+            <!-- Likes Count -->
+            <span class="text-muted small" id="like-count-{{ pos.id }}">
+                {% if pos.no_of_likes == 0 %}
+                0 likes
+                {% elif pos.no_of_likes == 1 %}
+                Liked by 1 person
+                {% else %}
+                Liked by {{ pos.no_of_likes }} people
+                {% endif %}
+            </span>
+            </div>
+
+            <!-- 💬 Comment Button -->
+            <div class="mt-3">
+              <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#comments{{ pos.id }}">
+                <i class="fa-solid fa-comment-dots"></i> Comments
+              </button>
+            </div>
+
+            <!-- 💬 Collapsible Comments Section -->
+            <div class="collapse mt-3" id="comments{{ pos.id }}">
+              <div class="card card-body">
+                
+                <!-- Comment Form -->
+                 <form class="comment-form" data-post-id="{{ pos.id }}">
+                  {% csrf_token %}
+                  <div class="input-group mb-3">
+                    <input type="text" name="content" class="form-control" placeholder="Add a comment..." required>
+                    <button class="btn btn-primary" type="submit">Post</button>
+                  </div>
+                 </form>
+
+                <!-- Existing Comments -->
+              <div id="comment-list-{{ pos.id }}"></div>
+                {% for comment in pos.comments.all %}       <!-- loop for all comments  -->
+                  <div class="border-bottom mb-2 pb-1">
+                    <strong>@{{ comment.user.username }}</strong>
+                    <p class="mb-1">{{ comment.content }}</p>
+                    <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                  </div>
+                {% empty %}
+                  <p class="text-muted">No comments yet.</p>
+                {% endfor %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+        {% empty %}
+          <p class="text-center text-muted mt-5">No posts yet.</p>
+        {% endfor %}
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
